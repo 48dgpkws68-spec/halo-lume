@@ -75,7 +75,7 @@
     const tick = t => { const p = clamp((t - t0) / dur, 0, 1), v = Math.round(to * (1 - Math.pow(1 - p, 4))); el.textContent = v.toLocaleString("nl-NL"); if (p < 1) requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   }), { threshold: .5 });
-  $$("[data-count]").forEach(el => cio.observe(el));
+  $$("[data-count]").forEach(el => { if (!reduce) el.textContent = "0"; cio.observe(el); });
 
   /* hero zaklamp: licht volgt de cursor, op telefoon zweeft het zelf */
   const hero = $(".hero .bg2");
@@ -338,7 +338,10 @@
   const closeLB = () => { if (!lb) return; lb.classList.remove("on"); $(".lb-in", lb).innerHTML = ""; lenis && lenis.start(); };
   lb && $(".x", lb).addEventListener("click", closeLB);
   lb && lb.addEventListener("click", e => { if (e.target === lb) closeLB(); });
-  addEventListener("keydown", e => { if (e.key === "Escape") closeLB(); });
+  addEventListener("keydown", e => {
+    if (e.key === "Escape") closeLB();
+    if (lb && lb.classList.contains("on")) { if (e.key === "ArrowRight") $(".lb .nx")?.click(); if (e.key === "ArrowLeft") $(".lb .pv")?.click(); }
+  });
   $$(".film").forEach(f => {
     const v = $("video", f);
     if (v && !touch) { f.addEventListener("pointerenter", () => { v.currentTime = 8; v.play().catch(() => {}); }); f.addEventListener("pointerleave", () => v.pause()); }
@@ -348,7 +351,8 @@
   // fotogalerij-lightbox
   $$("[data-gal]").forEach(g => {
     const items = $$("button[data-full]", g); let i = 0;
-    const show = () => { openLB(`<img src="${items[i].dataset.full}" alt=""><button class="pv" aria-label="Vorige">‹</button><button class="nx" aria-label="Volgende">›</button><div class="ct">${i + 1} / ${items.length}</div>`);
+    const EN = d.documentElement.lang === "en";
+    const show = () => { openLB(`<img src="${items[i].dataset.full}" alt=""><button class="pv" aria-label="${EN ? "Previous" : "Vorige"}">‹</button><button class="nx" aria-label="${EN ? "Next" : "Volgende"}">›</button><div class="ct">${i + 1} / ${items.length}</div>`);
       $(".lb .pv").onclick = e => { e.stopPropagation(); i = (i - 1 + items.length) % items.length; show(); };
       $(".lb .nx").onclick = e => { e.stopPropagation(); i = (i + 1) % items.length; show(); }; };
     items.forEach((b, k) => b.addEventListener("click", () => { i = k; show(); }));
@@ -382,7 +386,9 @@
     };
     const upd = () => {
       const K = +r.value; v.style.setProperty("--kc", col(K)); out.textContent = K;
-      $(".tint", v).style.opacity = K > 3400 ? .32 : .5;
+      const t = clamp((K - 2200) / 1800, 0, 1);
+      $("img", v).style.filter = `grayscale(${(.25 + t * .7).toFixed(2)}) brightness(${(.95 + t * .1).toFixed(2)}) contrast(${(1 + t * .08).toFixed(2)})`;
+      $(".tint", v).style.opacity = (.55 - t * .3).toFixed(2);
       const it = data.reduce((a, b) => Math.abs(b.k - K) < Math.abs(a.k - K) ? b : a, data[0]);
       if (it && info.dataset.k != it.k) { info.dataset.k = it.k; info.innerHTML = `<b>${it.t}</b><span class="muted">${it.b}</span>`; }
     };
@@ -422,6 +428,8 @@
   /* catalogus: merk + groep + subgroep + zoeken */
   $$(".catalog").forEach(cat => {
     const cards = $$(".card", cat), bch = $$(".cat-bar .chip[data-b]", cat), gch = $$(".cat-bar .chip[data-g]", cat), subsBox = $(".subs", cat), q = $(".search input", cat), empty = $(".empty", cat);
+    const norm = t => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    cards.forEach(c => c._q = norm(c.dataset.q));
     const P = new URLSearchParams(location.search);
     let b = P.get("merk") || "all", g = P.get("groep") || "all", sub = P.get("sub") || "all";
     const renderSubs = () => {
@@ -433,8 +441,8 @@
       $$(".chip", subsBox).forEach(x => x.addEventListener("click", () => { sub = x.dataset.sub; renderSubs(); apply(); }));
     };
     const apply = () => {
-      const s2 = (q.value || "").trim().toLowerCase(); let n = 0;
-      cards.forEach(c => { const ok = (b === "all" || c.dataset.b === b) && (g === "all" || c.dataset.g === g) && (sub === "all" || c.dataset.sub === sub) && (!s2 || c.dataset.q.includes(s2)); c.style.display = ok ? "" : "none"; if (ok) n++; });
+      const s2 = norm(q.value || "").trim(); let n = 0;
+      cards.forEach(c => { const ok = (b === "all" || c.dataset.b === b) && (g === "all" || c.dataset.g === g) && (sub === "all" || c.dataset.sub === sub) && (!s2 || s2.split(/\s+/).every(w => c._q.includes(w))); c.style.display = ok ? "" : "none"; if (ok) n++; });
       empty.style.display = n ? "none" : "block";
       bch.forEach(c => c.classList.toggle("on", c.dataset.b === b)); gch.forEach(c => c.classList.toggle("on", c.dataset.g === g));
     };
