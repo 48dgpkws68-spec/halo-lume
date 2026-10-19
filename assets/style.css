@@ -671,3 +671,18 @@ body[data-t="day"] .cglow{opacity:0}
 .hp.on::before{background:var(--gold);box-shadow:0 0 0 4px #fff,0 0 30px var(--amber)}
 .stad .clock{left:var(--pad);right:auto;text-align:left;top:150px}
 .stad .count{top:112px}
+
+/* ===================== v4: merken ===================== */
+.card .brd{position:absolute;left:14px;top:14px;z-index:2;font:500 10px var(--f-t);letter-spacing:.16em;text-transform:uppercase;color:#7B7165;background:rgba(255,255,255,.6);padding:5px 9px;border-radius:999px;backdrop-filter:blur(6px)}
+.card.photo .brd{color:#fff;background:rgba(0,0,0,.35)}
+.prt{height:clamp(440px,64vh,640px)}
+.prt .ln .h2{font-size:clamp(46px,6vw,104px)}
+a.badge:hover{border-color:var(--acc)}
+.spec{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.spec b{overflow-wrap:anywhere}
+@media(max-width:820px){.prt{height:auto}}
+.sinfo{max-width:400px}
+.sinfo .nmw{height:1.15em;font-size:clamp(24px,2.4vw,40px)}
+.sinfo .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sv.gt{min-height:190px}
+.sv.gt h3{margin-top:auto}

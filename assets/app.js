@@ -231,7 +231,7 @@
       setTimeout(() => {
         emb.textContent = it.n; emb.classList.remove("out"); emb.classList.add("in0"); void emb.offsetWidth; emb.classList.remove("in0");
         nm.textContent = it.n; nm.style.transition = "none"; nm.style.transform = "translateY(110%)"; void nm.offsetWidth; nm.style.transition = ""; nm.style.transform = ""; nm.style.opacity = 1;
-        kk.textContent = it.k + "K · " + it.kl;
+        kk.textContent = it.b + " · " + it.k + "K · " + it.kl;
         facts.innerHTML = it.f.map(f => `<span>${f}</span>`).join(""); facts.style.opacity = 1;
         go.href = it.u; go.textContent = it.cta;
       }, prev < 0 ? 0 : 420);
@@ -419,25 +419,27 @@
       new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { path.style.transition = "stroke-dashoffset 3.5s cubic-bezier(.2,.7,.1,1)"; path.style.strokeDashoffset = 0; o.disconnect(); setTimeout(() => { path.style.strokeDasharray = "4 5"; }, 3600); } }), { threshold: .3 }).observe(m); }
   });
 
-  /* catalogus: filter + zoeken */
+  /* catalogus: merk + groep + subgroep + zoeken */
   $$(".catalog").forEach(cat => {
-    const cards = $$(".card", cat), chips = $$(".cat-bar .chip", cat), subsBox = $(".subs", cat), q = $(".search input", cat), empty = $(".empty", cat);
-    let g = "all", sub = "all";
-    const params = new URLSearchParams(location.search);
-    if (params.get("groep")) g = params.get("groep");
-    if (params.get("sub")) sub = params.get("sub");
+    const cards = $$(".card", cat), bch = $$(".cat-bar .chip[data-b]", cat), gch = $$(".cat-bar .chip[data-g]", cat), subsBox = $(".subs", cat), q = $(".search input", cat), empty = $(".empty", cat);
+    const P = new URLSearchParams(location.search);
+    let b = P.get("merk") || "all", g = P.get("groep") || "all", sub = P.get("sub") || "all";
     const renderSubs = () => {
-      const subs = [...new Set(cards.filter(c => g === "all" || c.dataset.g === g).map(c => c.dataset.sub))];
-      subsBox.innerHTML = g === "all" ? "" : ['<button class="chip' + (sub === "all" ? " on" : "") + '" data-sub="all">' + subsBox.dataset.all + "</button>"].concat(subs.map(s => `<button class="chip${sub === s ? " on" : ""}" data-sub="${s}">${cat.querySelector(`.card[data-sub="${s}"]`).dataset.subl}</button>`)).join("");
-      $$(".chip", subsBox).forEach(b => b.addEventListener("click", () => { sub = b.dataset.sub; renderSubs(); apply(); }));
+      if (!subsBox) return;
+      const pool = cards.filter(c => (b === "all" || c.dataset.b === b) && (g === "all" || c.dataset.g === g));
+      const subs = [...new Set(pool.map(c => c.dataset.sub))];
+      if (g === "all" || subs.length < 2) { subsBox.innerHTML = ""; return; }
+      subsBox.innerHTML = [`<button class="chip${sub === "all" ? " on" : ""}" data-sub="all">${subsBox.dataset.all}</button>`].concat(subs.map(s2 => `<button class="chip${sub === s2 ? " on" : ""}" data-sub="${s2}">${pool.find(c => c.dataset.sub === s2).dataset.subl}</button>`)).join("");
+      $$(".chip", subsBox).forEach(x => x.addEventListener("click", () => { sub = x.dataset.sub; renderSubs(); apply(); }));
     };
     const apply = () => {
-      const s = (q.value || "").trim().toLowerCase(); let n = 0;
-      cards.forEach(c => { const ok = (g === "all" || c.dataset.g === g) && (sub === "all" || c.dataset.sub === sub) && (!s || c.dataset.q.includes(s)); c.style.display = ok ? "" : "none"; if (ok) n++; });
+      const s2 = (q.value || "").trim().toLowerCase(); let n = 0;
+      cards.forEach(c => { const ok = (b === "all" || c.dataset.b === b) && (g === "all" || c.dataset.g === g) && (sub === "all" || c.dataset.sub === sub) && (!s2 || c.dataset.q.includes(s2)); c.style.display = ok ? "" : "none"; if (ok) n++; });
       empty.style.display = n ? "none" : "block";
-      chips.forEach(c => c.classList.toggle("on", c.dataset.g === g));
+      bch.forEach(c => c.classList.toggle("on", c.dataset.b === b)); gch.forEach(c => c.classList.toggle("on", c.dataset.g === g));
     };
-    chips.forEach(c => c.addEventListener("click", () => { g = c.dataset.g; sub = "all"; renderSubs(); apply(); }));
+    bch.forEach(c => c.addEventListener("click", () => { b = c.dataset.b; sub = "all"; renderSubs(); apply(); }));
+    gch.forEach(c => c.addEventListener("click", () => { g = c.dataset.g; sub = "all"; renderSubs(); apply(); }));
     q.addEventListener("input", apply);
     renderSubs(); apply();
   });
