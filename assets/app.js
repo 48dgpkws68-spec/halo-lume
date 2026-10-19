@@ -1,0 +1,301 @@
+/* Strapitec · Official Neri Partner — interactie */
+(() => {
+  const d = document, root = d.documentElement;
+  root.classList.remove("no-js");
+  const $ = (s, el = d) => el.querySelector(s), $$ = (s, el = d) => [...el.querySelectorAll(s)];
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const touch = matchMedia("(hover: none)").matches;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  /* intro: lantaarn gaat aan, 1x per sessie */
+  const intro = $(".intro");
+  if (intro) {
+    let seen = false;
+    try { seen = sessionStorage.getItem("sx-intro") === "1"; sessionStorage.setItem("sx-intro", "1"); } catch (e) {}
+    const end = () => { intro.classList.add("done"); d.body.classList.add("ready"); setTimeout(() => intro.remove(), 1000); };
+    if (seen || reduce) { intro.remove(); d.body.classList.add("ready"); }
+    else { setTimeout(end, 3300); $(".skip", intro)?.addEventListener("click", end); intro.addEventListener("click", end); }
+  } else d.body.classList.add("ready");
+
+  /* smooth scroll */
+  let lenis = null;
+  if (window.Lenis && !reduce && !touch) {
+    lenis = window.__lenis = new Lenis({ duration: 1.15, smoothWheel: true });
+    const raf = t => { lenis.raf(t); requestAnimationFrame(raf); };
+    requestAnimationFrame(raf);
+    $$('a[href^="#"]').forEach(a => a.addEventListener("click", e => {
+      const t = $(a.getAttribute("href")); if (t) { e.preventDefault(); lenis.scrollTo(t, { offset: -80 }); }
+    }));
+  }
+
+  /* header verbergen bij naar beneden scrollen */
+  const hdr = $(".hdr"); let lastY = 0;
+  const mcta = $(".mcta");
+  addEventListener("scroll", () => {
+    const y = scrollY;
+    if (hdr && !d.body.classList.contains("menu-open")) hdr.classList.toggle("hide", y > 300 && y > lastY);
+    if (mcta) mcta.classList.toggle("on", y > 700);
+    lastY = y;
+  }, { passive: true });
+  $(".burger")?.addEventListener("click", () => d.body.classList.toggle("menu-open"));
+  $$(".mnav a").forEach(a => a.addEventListener("click", () => d.body.classList.remove("menu-open")));
+
+  /* woorden splitsen voor koppen */
+  $$(".sl").forEach(el => {
+    const walk = node => {
+      [...node.childNodes].forEach(n => {
+        if (n.nodeType === 3) {
+          const frag = d.createDocumentFragment();
+          n.textContent.split(/(\s+)/).forEach(part => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.append(" "); return; }
+            const w = d.createElement("span"); w.className = "w";
+            const i = d.createElement("span"); i.textContent = part; w.append(i); frag.append(w);
+          });
+          n.replaceWith(frag);
+        } else if (n.nodeType === 1 && !n.classList.contains("w")) walk(n);
+      });
+    };
+    walk(el);
+    $$(".w>span", el).forEach((s, i) => s.style.transitionDelay = (i * 0.06) + "s");
+  });
+
+  /* in beeld komen */
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+  }), { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+  const watch = () => $$(".rv,.sl,.step,[data-count]").forEach(el => io.observe(el));
+  if (d.body.classList.contains("ready")) watch(); else setTimeout(watch, intro && intro.isConnected ? 2600 : 0);
+  $$(".rv[data-d]").forEach(el => el.style.transitionDelay = el.dataset.d + "s");
+
+  /* tellers */
+  const cio = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return; cio.unobserve(e.target);
+    const el = e.target, to = +el.dataset.count, t0 = performance.now(), dur = 1800;
+    const tick = t => { const p = clamp((t - t0) / dur, 0, 1), v = Math.round(to * (1 - Math.pow(1 - p, 4))); el.textContent = v.toLocaleString("nl-NL"); if (p < 1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }), { threshold: .5 });
+  $$("[data-count]").forEach(el => cio.observe(el));
+
+  /* hero zaklamp: licht volgt de cursor, op telefoon zweeft het zelf */
+  const hero = $(".hero .bg2");
+  if (hero) {
+    let tx = 62, ty = 42, x = 62, y = 42, auto = touch, t = 0;
+    const box = hero.parentElement;
+    box.addEventListener("pointermove", e => { auto = false; const r = box.getBoundingClientRect(); tx = (e.clientX - r.left) / r.width * 100; ty = (e.clientY - r.top) / r.height * 100; });
+    box.addEventListener("pointerleave", () => auto = true);
+    const loop = () => {
+      if (auto) { t += 0.006; tx = 58 + Math.sin(t) * 26; ty = 42 + Math.sin(t * 1.7) * 14; }
+      x += (tx - x) * 0.08; y += (ty - y) * 0.08;
+      hero.style.setProperty("--mx", x + "%"); hero.style.setProperty("--my", y + "%");
+      requestAnimationFrame(loop);
+    };
+    loop();
+  }
+
+  /* cursor-gloed */
+  if (!touch && !reduce) {
+    const g = d.createElement("div"); g.className = "cglow"; d.body.append(g);
+    let gx = innerWidth / 2, gy = innerHeight / 2, cx = gx, cy = gy;
+    addEventListener("pointermove", e => { gx = e.clientX; gy = e.clientY; }, { passive: true });
+    const gl = () => { cx += (gx - cx) * .12; cy += (gy - cy) * .12; g.style.transform = `translate(${cx - 260}px,${cy - 260}px)`; requestAnimationFrame(gl); };
+    g.style.left = g.style.top = "0"; g.style.translate = "0 0"; gl();
+  }
+
+  /* spotlight op kaarten */
+  $$(".sv").forEach(c => c.addEventListener("pointermove", e => {
+    const r = c.getBoundingClientRect(); c.style.setProperty("--x", e.clientX - r.left + "px"); c.style.setProperty("--y", e.clientY - r.top + "px");
+  }));
+
+  /* tilt */
+  if (!touch) $$(".tilt").forEach(c => {
+    c.addEventListener("pointermove", e => { const r = c.getBoundingClientRect(), px = (e.clientX - r.left) / r.width - .5, py = (e.clientY - r.top) / r.height - .5; c.style.transform = `perspective(900px) rotateY(${px * 8}deg) rotateX(${-py * 8}deg)`; });
+    c.addEventListener("pointerleave", () => c.style.transform = "");
+  });
+
+  /* scroll-gestuurde secties */
+  const scrubs = [];
+  const prog = el => { const r = el.getBoundingClientRect(), h = r.height - innerHeight; return clamp(-r.top / (h || 1), 0, 1); };
+
+  // dag -> nacht
+  $$(".dn").forEach(dn => {
+    const s = $(".dn-s", dn), clock = $(".dn-clock b", dn);
+    scrubs.push(() => {
+      const p = prog(dn); s.style.setProperty("--p", clamp((p - .12) / .7, 0, 1).toFixed(3));
+      if (clock) { const m = Math.round(17 * 60 + 30 + p * 240); clock.textContent = String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
+    });
+  });
+
+  // horizontale projectenrail
+  $$(".hs").forEach(hs => {
+    const tr = $(".hs-track", hs), bar = $(".hs-prog", hs);
+    const size = () => { if (innerWidth <= 820) { hs.style.height = ""; return; } hs.style.height = (tr.scrollWidth - innerWidth + innerHeight * 1.15) + "px"; };
+    size(); addEventListener("resize", size); addEventListener("load", size);
+    scrubs.push(() => {
+      if (innerWidth <= 820) return;
+      const p = prog(hs), max = tr.scrollWidth - innerWidth;
+      tr.style.transform = `translate3d(${-p * max}px,0,0)`;
+      bar && bar.style.setProperty("--p", p.toFixed(3));
+      $$(".pj .im img", tr).forEach((im, i) => { const r = im.parentElement.getBoundingClientRect(); im.style.objectPosition = `${clamp(50 + (r.left / innerWidth - .5) * 30, 0, 100)}% 50%`; });
+    });
+  });
+
+  // stappenlijn
+  $$(".steps").forEach(st => scrubs.push(() => {
+    const r = st.getBoundingClientRect(); st.style.setProperty("--p", clamp((innerHeight * .6 - r.top) / r.height, 0, 1).toFixed(3));
+  }));
+
+  // parallax
+  $$("[data-par]").forEach(el => scrubs.push(() => {
+    const r = el.parentElement.getBoundingClientRect(); const k = +el.dataset.par || .15;
+    el.style.transform = `translate3d(0,${(r.top) * -k}px,0)`;
+  }));
+
+  let ticking = false;
+  const run = () => { scrubs.forEach(f => f()); ticking = false; };
+  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(run); } }, { passive: true });
+  addEventListener("resize", run); run();
+
+  /* video's alleen afspelen als ze in beeld zijn */
+  const vio = new IntersectionObserver(es => es.forEach(e => {
+    const v = e.target; if (e.isIntersecting) { v.play().catch(() => {}); } else v.pause();
+  }), { threshold: .15 });
+  $$("video[data-auto]").forEach(v => { v.muted = true; v.playsInline = true; vio.observe(v); });
+
+  /* film-hover preview + lightbox */
+  const lb = $("div.lb");
+  const openLB = (html) => { if (!lb) return; $(".lb-in", lb).innerHTML = html; lb.classList.add("on"); lenis && lenis.stop(); };
+  const closeLB = () => { if (!lb) return; lb.classList.remove("on"); $(".lb-in", lb).innerHTML = ""; lenis && lenis.start(); };
+  lb && $(".x", lb).addEventListener("click", closeLB);
+  lb && lb.addEventListener("click", e => { if (e.target === lb) closeLB(); });
+  addEventListener("keydown", e => { if (e.key === "Escape") closeLB(); });
+  $$(".film").forEach(f => {
+    const v = $("video", f);
+    if (v && !touch) { f.addEventListener("pointerenter", () => { v.currentTime = 8; v.play().catch(() => {}); }); f.addEventListener("pointerleave", () => v.pause()); }
+    f.addEventListener("click", () => openLB(`<video src="${f.dataset.src}" controls autoplay playsinline></video>`));
+  });
+
+  // fotogalerij-lightbox
+  $$("[data-gal]").forEach(g => {
+    const items = $$("button[data-full]", g); let i = 0;
+    const show = () => { openLB(`<img src="${items[i].dataset.full}" alt=""><button class="pv" aria-label="Vorige">‹</button><button class="nx" aria-label="Volgende">›</button><div class="ct">${i + 1} / ${items.length}</div>`);
+      $(".lb .pv").onclick = e => { e.stopPropagation(); i = (i - 1 + items.length) % items.length; show(); };
+      $(".lb .nx").onclick = e => { e.stopPropagation(); i = (i + 1) % items.length; show(); }; };
+    items.forEach((b, k) => b.addEventListener("click", () => { i = k; show(); }));
+  });
+
+  /* productgalerij */
+  $$(".gal").forEach(g => {
+    const main = $(".gal-main img", g), th = $$(".gal-th button", g);
+    th.forEach(b => b.addEventListener("click", () => {
+      th.forEach(x => x.classList.remove("on")); b.classList.add("on");
+      main.style.opacity = 0; setTimeout(() => { main.src = b.dataset.full; main.classList.toggle("ph0", b.dataset.cat === "1"); main.style.opacity = 1; }, 180);
+    }));
+    const box = $(".gal-main", g);
+    if (!touch) {
+      box.addEventListener("pointermove", e => { const r = box.getBoundingClientRect(); main.style.transformOrigin = `${(e.clientX - r.left) / r.width * 100}% ${(e.clientY - r.top) / r.height * 100}%`; main.style.transform = "scale(1.7)"; });
+      box.addEventListener("pointerleave", () => main.style.transform = "");
+    }
+  });
+  $$(".vars button").forEach(b => b.addEventListener("click", () => openLB(`<img src="${b.dataset.full}" alt="">`)));
+
+  /* kelvin-schuif */
+  $$(".kel").forEach(k => {
+    const r = $(".range", k), v = $(".kel-v", k), out = $(".read b", k), info = $(".kinfo", k);
+    const data = JSON.parse(k.dataset.info || "[]");
+    const col = K => { // benadering kleur van een zwarte straler
+      const t = K / 100; let R, G, B;
+      R = t <= 66 ? 255 : 329.7 * Math.pow(t - 60, -0.1332);
+      G = t <= 66 ? 99.47 * Math.log(t) - 161.12 : 288.12 * Math.pow(t - 60, -0.0755);
+      B = t >= 66 ? 255 : t <= 19 ? 0 : 138.52 * Math.log(t - 10) - 305.04;
+      return `rgb(${clamp(R, 0, 255) | 0},${clamp(G, 0, 255) | 0},${clamp(B, 0, 255) | 0})`;
+    };
+    const upd = () => {
+      const K = +r.value; v.style.setProperty("--kc", col(K)); out.textContent = K.toLocaleString("nl-NL");
+      $(".tint", v).style.opacity = K > 3400 ? .32 : .5;
+      const it = data.reduce((a, b) => Math.abs(b.k - K) < Math.abs(a.k - K) ? b : a, data[0]);
+      if (it && info.dataset.k != it.k) { info.dataset.k = it.k; info.innerHTML = `<b>${it.t}</b><span class="muted">${it.b}</span>`; }
+    };
+    r.addEventListener("input", upd); upd();
+  });
+
+  /* configurator: mast + top + armatuur */
+  $$(".cfg").forEach(c => {
+    const sets = JSON.parse(c.dataset.sets), idx = [0, 0, 0], L = c.dataset.lang;
+    const cards = $$(".cfg-c", c), sum = $(".cfg-sum b", c), btn = $(".cfg-sum a", c);
+    const paint = (k, anim) => {
+      const it = sets[k][idx[k]], card = cards[k], im = $("img", card);
+      const set = () => { im.src = it.img; im.alt = it.name; $(".nm", card).textContent = it.name; $(".cnt", card).textContent = (idx[k] + 1) + " / " + sets[k].length; im.classList.remove("sw"); };
+      if (anim) { im.classList.add("sw"); setTimeout(set, 200); } else set();
+      const names = idx.map((i, n) => sets[n][i].name);
+      sum.textContent = names.join("  +  ");
+      btn.href = btn.dataset.base + "?onderwerp=" + encodeURIComponent((L === "en" ? "Lighting point: " : "Lichtpunt: ") + names.join(" + "));
+    };
+    cards.forEach((card, k) => {
+      $$("button", card).forEach(b => b.addEventListener("click", () => { idx[k] = (idx[k] + (+b.dataset.dir) + sets[k].length) % sets[k].length; paint(k, true); }));
+      paint(k, false);
+    });
+    $(".cfg-rand", c)?.addEventListener("click", () => { [0, 1, 2].forEach(k => { idx[k] = Math.floor(Math.random() * sets[k].length); paint(k, true); }); });
+  });
+
+  /* sterrenbeeldkaart */
+  $$(".map").forEach(m => {
+    const stars = $$(".st", m), links = $$(".plist a", m);
+    const on = s => { stars.forEach(x => x.classList.toggle("on", x.dataset.s === s)); links.forEach(x => x.classList.toggle("on", x.dataset.s === s)); };
+    [...stars, ...links].forEach(el => el.addEventListener("pointerenter", () => on(el.dataset.s)));
+    stars.forEach(s => s.addEventListener("click", () => { const a = links.find(l => l.dataset.s === s.dataset.s); if (a) location.href = a.href; }));
+    const path = $(".ln2", m);
+    if (path && !reduce) { const L = path.getTotalLength(); path.style.strokeDasharray = L; path.style.strokeDashoffset = L;
+      new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { path.style.transition = "stroke-dashoffset 3.5s cubic-bezier(.2,.7,.1,1)"; path.style.strokeDashoffset = 0; o.disconnect(); setTimeout(() => { path.style.strokeDasharray = "4 5"; }, 3600); } }), { threshold: .3 }).observe(m); }
+  });
+
+  /* catalogus: filter + zoeken */
+  $$(".catalog").forEach(cat => {
+    const cards = $$(".card", cat), chips = $$(".cat-bar .chip", cat), subsBox = $(".subs", cat), q = $(".search input", cat), empty = $(".empty", cat);
+    let g = "all", sub = "all";
+    const params = new URLSearchParams(location.search);
+    if (params.get("groep")) g = params.get("groep");
+    if (params.get("sub")) sub = params.get("sub");
+    const renderSubs = () => {
+      const subs = [...new Set(cards.filter(c => g === "all" || c.dataset.g === g).map(c => c.dataset.sub))];
+      subsBox.innerHTML = g === "all" ? "" : ['<button class="chip' + (sub === "all" ? " on" : "") + '" data-sub="all">' + subsBox.dataset.all + "</button>"].concat(subs.map(s => `<button class="chip${sub === s ? " on" : ""}" data-sub="${s}">${cat.querySelector(`.card[data-sub="${s}"]`).dataset.subl}</button>`)).join("");
+      $$(".chip", subsBox).forEach(b => b.addEventListener("click", () => { sub = b.dataset.sub; renderSubs(); apply(); }));
+    };
+    const apply = () => {
+      const s = (q.value || "").trim().toLowerCase(); let n = 0;
+      cards.forEach(c => { const ok = (g === "all" || c.dataset.g === g) && (sub === "all" || c.dataset.sub === sub) && (!s || c.dataset.q.includes(s)); c.style.display = ok ? "" : "none"; if (ok) n++; });
+      empty.style.display = n ? "none" : "block";
+      chips.forEach(c => c.classList.toggle("on", c.dataset.g === g));
+    };
+    chips.forEach(c => c.addEventListener("click", () => { g = c.dataset.g; sub = "all"; renderSubs(); apply(); }));
+    q.addEventListener("input", apply);
+    renderSubs(); apply();
+  });
+
+  /* voor/na-schuif */
+  $$(".ba").forEach(b => {
+    let drag = false;
+    const set = x => { const r = b.getBoundingClientRect(); b.style.setProperty("--p", clamp((x - r.left) / r.width * 100, 0, 100) + "%"); };
+    b.addEventListener("pointerdown", e => { drag = true; set(e.clientX); b.setPointerCapture(e.pointerId); });
+    b.addEventListener("pointermove", e => { if (drag) set(e.clientX); });
+    b.addEventListener("pointerup", () => drag = false);
+    let t = 0; const hint = () => { if (drag || t > 1) return; t += 0.01; b.style.setProperty("--p", (50 + Math.sin(t * Math.PI * 2) * 18) + "%"); requestAnimationFrame(hint); };
+    new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { hint(); o.disconnect(); } }), { threshold: .5 }).observe(b);
+  });
+
+  /* formulier (FormSubmit) */
+  $$("form[data-fs]").forEach(f => {
+    const p = new URLSearchParams(location.search), sub = p.get("onderwerp");
+    if (sub) { const m = f.querySelector("[name=bericht]"); if (m && !m.value) m.value = sub + "\n\n"; const s = f.querySelector("[name=_subject]"); if (s) s.value += " · " + sub; }
+    f.addEventListener("submit", async e => {
+      e.preventDefault();
+      const b = f.querySelector("button[type=submit]"), lbl = b.innerHTML; b.disabled = true; b.innerHTML = "…";
+      try {
+        const r = await fetch(f.action.replace("formsubmit.co/", "formsubmit.co/ajax/"), { method: "POST", headers: { Accept: "application/json" }, body: new FormData(f) });
+        const j = await r.json();
+        if (String(j.success) === "true") { f.style.display = "none"; f.nextElementSibling.classList.add("on"); }
+        else throw new Error(j.message || "fout");
+      } catch (err) { b.disabled = false; b.innerHTML = lbl; alert(f.dataset.err); }
+    });
+  });
+})();

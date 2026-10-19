@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://halo-lume.com/sitemap.xml
