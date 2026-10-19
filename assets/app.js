@@ -161,7 +161,7 @@
   }
 
   /* manifest: woorden gaan aan tijdens het scrollen */
-  $$(".lit").forEach(el => {
+  $$(".mtxt").forEach(el => {
     const wrapWords = node => [...node.childNodes].forEach(n => {
       if (n.nodeType === 3) {
         const f = d.createDocumentFragment();
@@ -180,7 +180,7 @@
   });
 
   /* lichtdeeltjes in de hero */
-  $$(".hero canvas.motes").forEach(cv => {
+  $$(".hero canvas.motes, .stage canvas.motes").forEach(cv => {
     if (reduce) return;
     const ctx = cv.getContext("2d"); let W, H, dpr = Math.min(2, devicePixelRatio || 1), parts = [];
     const size = () => { W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
@@ -203,6 +203,123 @@
     };
     requestAnimationFrame(tick);
   });
+
+
+  /* ---------- v3 ---------- */
+  const kcol = K => { const t = K / 100; let R, G, B;
+    R = t <= 66 ? 255 : 329.7 * Math.pow(t - 60, -0.1332);
+    G = t <= 66 ? 99.47 * Math.log(t) - 161.12 : 288.12 * Math.pow(t - 60, -0.0755);
+    B = t >= 66 ? 255 : t <= 19 ? 0 : 138.52 * Math.log(t - 10) - 305.04;
+    return `rgb(${clamp(R, 0, 255) | 0},${clamp(G, 0, 255) | 0},${clamp(B, 0, 255) | 0})`; };
+
+  /* productbühne: lampen schuiven in, gaan aan, kantelen mee met de muis */
+  $$(".stage").forEach(st => {
+    const items = JSON.parse(st.dataset.items), imgs = $$(".lamp img", st), btns = $$(".sel button", st);
+    const emb = $(".emb span", st), nm = $(".sinfo .nm", st), kk = $(".sinfo .k b", st), facts = $(".sinfo .facts", st), go = $(".sinfo .go", st);
+    const DUR = 5200; let cur = -1, auto = !reduce, timer, litT;
+    const set = (i, user) => {
+      if (user) auto = false;
+      if (i === cur) return;
+      const it = items[i]; const prev = cur; cur = i;
+      st.classList.remove("lit"); clearTimeout(litT);
+      imgs.forEach((im, k) => { im.classList.toggle("on", k === i); im.classList.toggle("gone", k === prev); });
+      setTimeout(() => imgs[prev] && imgs[prev].classList.remove("gone"), 1200);
+      st.style.setProperty("--kc", kcol(it.k)); st.style.setProperty("--gx", it.gx * 100 + "%"); st.style.setProperty("--gy", it.gy * 100 + "%"); st.style.setProperty("--ca", (it.ca || 0) + "deg");
+      // naam rolt
+      emb.classList.add("out");
+      nm.style.transform = "translateY(-110%)"; nm.style.opacity = 0; facts.style.opacity = 0;
+      setTimeout(() => {
+        emb.textContent = it.n; emb.classList.remove("out"); emb.classList.add("in0"); void emb.offsetWidth; emb.classList.remove("in0");
+        nm.textContent = it.n; nm.style.transition = "none"; nm.style.transform = "translateY(110%)"; void nm.offsetWidth; nm.style.transition = ""; nm.style.transform = ""; nm.style.opacity = 1;
+        kk.textContent = it.k + "K · " + it.kl;
+        facts.innerHTML = it.f.map(f => `<span>${f}</span>`).join(""); facts.style.opacity = 1;
+        go.href = it.u; go.textContent = it.cta;
+      }, prev < 0 ? 0 : 420);
+      litT = setTimeout(() => st.classList.add("lit"), prev < 0 ? 900 : 1000);
+      btns.forEach((b, k) => { b.classList.toggle("on", k === i); b.classList.remove("run"); });
+      clearTimeout(timer);
+      if (auto) { const b = btns[i]; void b.offsetWidth; b.style.setProperty("--dur", DUR + "ms"); b.classList.add("run"); timer = setTimeout(() => { const r = st.getBoundingClientRect(); if (r.bottom > innerHeight * .4) set((cur + 1) % items.length); else { auto && set((cur + 1) % items.length); } }, DUR); }
+    };
+    btns.forEach((b, k) => b.addEventListener("click", () => set(k, true)));
+    const start = () => set(0);
+    if (d.body.classList.contains("ready")) start(); else setTimeout(start, $(".intro") ? 2900 : 0);
+    if (!touch && !reduce) {
+      const tl = $(".tilt", st), embW = $(".emb", st), gl = $(".bgglow", st);
+      st.addEventListener("pointermove", e => {
+        const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
+        tl.style.transform = `rotateY(${x * 16}deg) rotateX(${-y * 10}deg) translate3d(${x * 14}px,${y * 10}px,0)`;
+        embW.style.setProperty("--ex", x * -40 + "px"); embW.style.setProperty("--ey", y * -24 + "px");
+        gl.style.transform = `translate(${x * 30}px,${y * 20}px)`;
+      });
+    }
+  });
+
+  /* als de stad aangaat: lantaarns één voor één aan */
+  $$(".stad").forEach(sd => {
+    const L = JSON.parse(sd.dataset.l), pic = $(".pic", sd), lit = $(".lgt", sd), clock = $(".clock b", sd), cnt = $(".count b", sd), caps = $$(".cap .h2", sd);
+    scrubs.push(() => {
+      const p = prog(sd);
+      const masks = L.map((l, i) => { const a = clamp((p - .08 - i * .075) / .12, 0, 1); const r = (l[2] * a * pic.clientWidth).toFixed(1); return `radial-gradient(circle ${r}px at ${l[0]}% ${l[1]}%, #000 0%, rgba(0,0,0,.85) 35%, transparent 100%)`; });
+      lit.style.setProperty("--m", masks.join(","));
+      pic.style.setProperty("--f", clamp((p - .72) / .2, 0, 1).toFixed(3));
+      pic.style.setProperty("--z", (1.06 - p * .06).toFixed(4));
+      const on = L.filter((l, i) => p - .08 - i * .075 > .02).length; cnt.textContent = on;
+      const m = Math.round(17 * 60 + 41 + p * 34); clock.textContent = String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+      const ci = p < .3 ? 0 : p < .72 ? 1 : 2; caps.forEach((c, k) => c.style.opacity = k === ci ? 1 : 0);
+    });
+  });
+
+  /* hotspots */
+  $$(".hot").forEach(h => {
+    const pts = $$(".hp", h), rows = $$(".hlist button", h), v = $(".hot-v", h);
+    const on = i => { pts.forEach((p, k) => p.classList.toggle("on", k === i)); rows.forEach((r, k) => r.classList.toggle("on", k === i)); v.classList.toggle("lit", i === 1 || i === 2); };
+    [...pts, ...rows].forEach(el => el.addEventListener("click", () => on(+el.dataset.i)));
+    pts.forEach(p => p.addEventListener("pointerenter", () => on(+p.dataset.i)));
+    on(0);
+  });
+
+  /* bioscoop-hoofdstukken */
+  $$(".cine").forEach(c => {
+    const clips = $$(".clip", c), hs = $$(".chap .t h2", c), ps = JSON.parse(c.dataset.p), pe = $(".chap p", c), tabs = $$(".tabs div", c), vids = clips.map(x => $("video", x));
+    let cur = -1;
+    scrubs.push(() => {
+      const p = prog(c), n = clips.length, f = p * n, i = clamp(Math.floor(f), 0, n - 1);
+      tabs.forEach((t, k) => t.style.setProperty("--p", clamp(f - k, 0, 1).toFixed(3)));
+      if (i !== cur) {
+        cur = i;
+        clips.forEach((x, k) => x.classList.toggle("on", k === i)); hs.forEach((x, k) => x.classList.toggle("on", k === i));
+        pe.style.opacity = 0; setTimeout(() => { pe.textContent = ps[i]; pe.style.opacity = 1; }, 250);
+        vids.forEach((v, k) => { if (!v) return; if (k === i) { v.play().catch(() => {}); } else v.pause(); });
+      }
+    });
+  });
+
+  /* paginaovergang met lichtveeg */
+  const pt = d.createElement("div"); pt.className = "pt"; d.body.append(pt);
+  let came = false; try { came = sessionStorage.getItem("sx-pt") === "1"; sessionStorage.removeItem("sx-pt"); } catch (e) {}
+  if (came && !reduce) { pt.classList.add("start"); requestAnimationFrame(() => requestAnimationFrame(() => { pt.classList.remove("start"); pt.classList.add("leave"); })); }
+  addEventListener("pageshow", e => { if (e.persisted) pt.className = "pt"; });
+  d.addEventListener("click", e => {
+    const a = e.target.closest("a"); if (!a || reduce) return;
+    const h = a.getAttribute("href") || ""; if (!h.startsWith("/") || h.startsWith("//") || a.target || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    if (h.split("#")[0] === location.pathname + location.search) return;
+    e.preventDefault(); try { sessionStorage.setItem("sx-pt", "1"); } catch (err) {}
+    pt.className = "pt"; void pt.offsetWidth; pt.classList.add("cover"); setTimeout(() => location.href = h, 520);
+  });
+
+  /* eigen cursor */
+  if (!touch && !reduce) {
+    const cu = d.createElement("div"); cu.className = "cur"; cu.innerHTML = "<span></span>"; d.body.append(cu);
+    let mx = -100, my = -100, cx = -100, cy = -100;
+    addEventListener("pointermove", e => { mx = e.clientX; my = e.clientY; }, { passive: true });
+    const cl = () => { cx += (mx - cx) * .22; cy += (my - cy) * .22; cu.style.transform = `translate(${cx}px,${cy}px)`; requestAnimationFrame(cl); }; cl();
+    d.addEventListener("pointerover", e => {
+      const t = e.target.closest("[data-cur],a,button,input,textarea,select,.range");
+      cu.classList.remove("big", "link"); $("span", cu).textContent = "";
+      if (!t) return;
+      if (t.dataset.cur) { cu.classList.add("big"); $("span", cu).textContent = t.dataset.cur; } else cu.classList.add("link");
+    });
+  }
 
   let ticking = false;
   const run = () => { scrubs.forEach(f => f()); ticking = false; };
