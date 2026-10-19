@@ -381,7 +381,7 @@
       return `rgb(${clamp(R, 0, 255) | 0},${clamp(G, 0, 255) | 0},${clamp(B, 0, 255) | 0})`;
     };
     const upd = () => {
-      const K = +r.value; v.style.setProperty("--kc", col(K)); out.textContent = K.toLocaleString("nl-NL");
+      const K = +r.value; v.style.setProperty("--kc", col(K)); out.textContent = K;
       $(".tint", v).style.opacity = K > 3400 ? .32 : .5;
       const it = data.reduce((a, b) => Math.abs(b.k - K) < Math.abs(a.k - K) ? b : a, data[0]);
       if (it && info.dataset.k != it.k) { info.dataset.k = it.k; info.innerHTML = `<b>${it.t}</b><span class="muted">${it.b}</span>`; }
