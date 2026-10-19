@@ -151,6 +151,59 @@
     el.style.transform = `translate3d(0,${(r.top) * -k}px,0)`;
   }));
 
+
+  /* Giorno e Notte: de sectie in het midden van het scherm bepaalt dag of nacht */
+  const base = d.body.dataset.t || "night";
+  const themed = $$("main > section, main > div.mq, footer.ftr");
+  if (themed.length) {
+    const tio = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) d.body.dataset.t = e.target.dataset.t || base; }), { rootMargin: "-48% 0px -48% 0px" });
+    themed.forEach(el => tio.observe(el));
+  }
+
+  /* manifest: woorden gaan aan tijdens het scrollen */
+  $$(".lit").forEach(el => {
+    const wrapWords = node => [...node.childNodes].forEach(n => {
+      if (n.nodeType === 3) {
+        const f = d.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(t => { if (!t) return; if (/^\s+$/.test(t)) { f.append(" "); return; } const s = d.createElement("span"); s.className = "lw"; s.textContent = t; f.append(s); });
+        n.replaceWith(f);
+      } else if (n.nodeType === 1) wrapWords(n);
+    });
+    wrapWords(el);
+    const ws = $$(".lw", el);
+    scrubs.push(() => {
+      const r = el.getBoundingClientRect();
+      const p = clamp((innerHeight * 0.82 - r.top) / (r.height + innerHeight * 0.35), 0, 1);
+      const n = Math.round(p * ws.length * 1.08);
+      ws.forEach((w, i) => w.classList.toggle("on", i < n));
+    });
+  });
+
+  /* lichtdeeltjes in de hero */
+  $$(".hero canvas.motes").forEach(cv => {
+    if (reduce) return;
+    const ctx = cv.getContext("2d"); let W, H, dpr = Math.min(2, devicePixelRatio || 1), parts = [];
+    const size = () => { W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    size(); addEventListener("resize", size);
+    const N = innerWidth < 700 ? 34 : 70;
+    for (let i = 0; i < N; i++) parts.push({ x: Math.random(), y: Math.random(), r: .6 + Math.random() * 2.2, s: .00012 + Math.random() * .00045, a: Math.random() * 6.28, w: .2 + Math.random() * .8 });
+    let vis = true; new IntersectionObserver(es => vis = es[0].isIntersecting).observe(cv);
+    const tick = t => {
+      if (vis) {
+        ctx.clearRect(0, 0, W, H);
+        parts.forEach(p => {
+          p.y -= p.s; p.a += .01; if (p.y < -.05) { p.y = 1.05; p.x = Math.random(); }
+          const x = (p.x + Math.sin(p.a) * .006) * W, y = p.y * H, al = (.25 + .55 * Math.abs(Math.sin(p.a * .7))) * p.w;
+          const g = ctx.createRadialGradient(x, y, 0, x, y, p.r * 5);
+          g.addColorStop(0, `rgba(255,214,150,${al})`); g.addColorStop(1, "rgba(255,170,80,0)");
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, p.r * 5, 0, 6.28); ctx.fill();
+        });
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+
   let ticking = false;
   const run = () => { scrubs.forEach(f => f()); ticking = false; };
   addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(run); } }, { passive: true });
