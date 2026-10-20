@@ -463,6 +463,17 @@
     new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { hint(); o.disconnect(); } }), { threshold: .5 }).observe(b);
   });
 
+  /* partner-rekenvoorbeeld + kopieerknop */
+  $$(".calc").forEach(c => {
+    const fee = JSON.parse(c.dataset.fee), r = c.querySelector("input"), fmt = v => "€ " + Math.round(v).toLocaleString(c.dataset.loc || "nl-NL");
+    const upd = () => { const v = +r.value; c.querySelector("[data-k=v]").textContent = fmt(v); for (const k in fee) c.querySelector(`[data-k=${k}]`).textContent = fmt(v * fee[k] / 100); };
+    r.addEventListener("input", upd); upd();
+  });
+  $$("[data-copy]").forEach(b => b.addEventListener("click", () => {
+    const t = b.previousElementSibling.textContent, l = b.textContent;
+    navigator.clipboard.writeText(t).then(() => { b.textContent = "✓"; setTimeout(() => b.textContent = l, 1600); });
+  }));
+
   /* formulier (FormSubmit) */
   $$("form[data-fs]").forEach(f => {
     const p = new URLSearchParams(location.search), sub = p.get("onderwerp");

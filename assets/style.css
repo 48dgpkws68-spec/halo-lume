@@ -745,3 +745,52 @@ body[data-t="day"]{--muted:#665D51}
 @media(min-width:901px) and (max-width:1250px){.sinfo .go{display:none}}
 .stage .lead{margin:24px 0 6px}
 .stage .ctas{margin-top:28px}
+
+/* partnerprogramma */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tier{border-radius:26px;padding:32px;background:var(--bg2);border:1px solid var(--line);display:flex;flex-direction:column;gap:14px;transition:border-color .4s,transform .7s var(--ease)}
+.tier:hover{border-color:var(--acc);transform:translateY(-6px)}
+.tier.hi{border-color:var(--acc)}
+.tier .n{font:italic 400 22px var(--f-s);color:var(--acc)}
+.tier h3{font:500 30px/1.05 var(--f-d);letter-spacing:-.03em}
+.tier .fee{font:500 clamp(26px,2.4vw,36px)/1.05 var(--f-d);letter-spacing:-.03em;color:var(--acc);padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.tier ul{list-style:none;display:grid;gap:10px;margin-bottom:auto;padding-bottom:14px}
+.tier li{display:flex;gap:12px;color:var(--fg2);font-size:15px}
+.tier li::before{content:"✦";flex:none;color:var(--acc);font-size:10px;margin-top:6px}
+.tier .btn{align-self:flex-start}
+@media(max-width:1000px){.tiers{grid-template-columns:1fr}}
+.calc{border-radius:28px;padding:clamp(24px,3vw,40px);background:var(--bg2);border:1px solid var(--line2)}
+.calc label{display:flex;justify-content:space-between;align-items:baseline;gap:12px;color:var(--muted);font-size:14px;letter-spacing:.04em}
+.calc output{font:500 clamp(30px,3.4vw,52px)/1 var(--f-d);letter-spacing:-.03em;color:var(--fg)}
+.calc input[type=range]{width:100%;margin:26px 0 30px;accent-color:var(--acc);height:28px}
+.calc-r{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.calc-r div{border-radius:18px;border:1px solid var(--line);padding:18px}
+.calc-r small{display:block;color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.calc-r b{display:block;margin-top:8px;font:500 clamp(20px,2vw,30px)/1.1 var(--f-d);color:var(--acc);letter-spacing:-.02em}
+@media(max-width:560px){.calc-r{grid-template-columns:1fr}}
+.regio{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.rg{border-radius:24px;border:1px solid var(--line);padding:28px;background:var(--bg2);min-height:230px;display:flex;flex-direction:column;gap:10px}
+.rg h3{font:500 34px/1 var(--f-d);letter-spacing:-.03em;margin-top:8px}
+.rg p{color:var(--fg2)}
+.rg em{margin-top:auto;font:italic 400 17px var(--f-s);color:var(--acc)}
+@media(max-width:1000px){.regio{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.regio{grid-template-columns:1fr}}
+.eu{margin-top:12px;border-radius:24px;border:1px solid var(--acc);padding:30px;display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;align-items:center}
+.wie{margin-top:40px}
+.pchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.pchips span{border:1px solid var(--line2);border-radius:999px;padding:9px 16px;font-size:14px;color:var(--fg2)}
+.faq{border-bottom:1px solid var(--line);padding:4px 0}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:20px;padding:20px 0;font:500 clamp(18px,1.6vw,23px)/1.3 var(--f-d);letter-spacing:-.015em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--acc);font-size:26px;line-height:1;transition:transform .4s var(--ease)}
+.faq[open] summary::after{transform:rotate(45deg)}
+.faq p{color:var(--fg2);padding:0 0 22px;max-width:70ch}
+.dls{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.dl{display:flex;align-items:center;gap:18px;border-radius:22px;border:1px solid var(--line);padding:20px 22px;background:var(--bg2);transition:border-color .4s,transform .5s var(--ease)}
+.dl:hover{border-color:var(--acc);transform:translateY(-3px)}
+.dl .ic{width:50px;height:50px;flex:none;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;color:var(--acc)}
+.dl b{display:block;font-weight:500}
+.dl small{display:block;color:var(--muted);font-size:13px;margin-top:3px}
+.dl .go{margin-left:auto;color:var(--acc);font-size:20px}
+.pcopy{margin-top:30px;border-radius:24px;border:1px solid var(--line2);padding:30px;display:grid;gap:16px;justify-items:start}
+.pcopy p{color:var(--fg2);font-size:17px;max-width:80ch}
