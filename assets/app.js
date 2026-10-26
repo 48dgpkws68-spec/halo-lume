@@ -230,6 +230,9 @@
       nm.style.transform = "translateY(-110%)"; nm.style.opacity = 0; facts.style.opacity = 0;
       setTimeout(() => {
         emb.textContent = it.n; emb.classList.remove("out"); emb.classList.add("in0"); void emb.offsetWidth; emb.classList.remove("in0");
+        // lange namen kleiner zetten zodat de laatste letter niet buiten beeld valt
+        const ew = emb.parentElement; ew.style.fontSize = ""; const room = st.clientWidth * .92, w = ew.scrollWidth;
+        if (w > room) ew.style.fontSize = parseFloat(getComputedStyle(ew).fontSize) * room / w + "px";
         nm.textContent = it.n; nm.style.transition = "none"; nm.style.transform = "translateY(110%)"; void nm.offsetWidth; nm.style.transition = ""; nm.style.transform = ""; nm.style.opacity = 1;
         kk.textContent = it.b + " · " + it.k + "K · " + it.kl;
         facts.innerHTML = it.f.map(f => `<span>${f}</span>`).join(""); facts.style.opacity = 1;
