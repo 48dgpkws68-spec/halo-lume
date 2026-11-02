@@ -422,6 +422,7 @@ body[data-t="day"] .mtxt em .lw.on{text-shadow:none}
 .mini:hover{transform:translateX(4px)}
 .mini img{width:64px;height:64px;border-radius:12px;background:var(--plate);object-fit:contain;padding:4px}
 .masonry{columns:2 300px;column-gap:12px}
+.masonry.m3{columns:3 260px}
 .masonry button{display:block;width:100%;margin-bottom:12px;border-radius:22px;overflow:hidden;break-inside:avoid}
 .masonry img{width:100%;transition:transform 1.1s var(--ease)}
 .masonry button:hover img{transform:scale(1.04)}
