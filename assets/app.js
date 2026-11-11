@@ -487,7 +487,7 @@
       try {
         const r = await fetch(f.action.replace("formsubmit.co/", "formsubmit.co/ajax/"), { method: "POST", headers: { Accept: "application/json" }, body: new FormData(f) });
         const j = await r.json();
-        if (String(j.success) === "true") { f.style.display = "none"; f.nextElementSibling.classList.add("on"); }
+        if (String(j.success) === "true") { f.style.display = "none"; f.nextElementSibling.classList.add("on"); try { window.umami && umami.track("formulier-verzonden", { pagina: location.pathname }); } catch (x) {} }
         else throw new Error(j.message || "fout");
       } catch (err) { b.disabled = false; b.innerHTML = lbl; alert(f.dataset.err); }
     });
