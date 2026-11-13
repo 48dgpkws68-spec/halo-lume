@@ -483,13 +483,16 @@
     if (sub) { const m = f.querySelector("[name=bericht]"); if (m && !m.value) m.value = sub + "\n\n"; const s = f.querySelector("[name=_subject]"); if (s) s.value += " · " + sub; }
     f.addEventListener("submit", async e => {
       e.preventDefault();
+      const ev = (n, d) => { try { window.umami && umami.track(n, Object.assign({ pagina: location.pathname }, d || {})); } catch (x) {} };
+      /* onzichtbaar veld ingevuld = geen mens: niets versturen, wel tellen */
+      const hp = f.querySelector("[name=_honey]"); if (hp && hp.value) { ev("formulier-spam"); return; }
       const b = f.querySelector("button[type=submit]"), lbl = b.innerHTML; b.disabled = true; b.innerHTML = "…";
       try {
         const r = await fetch(f.action.replace("formsubmit.co/", "formsubmit.co/ajax/"), { method: "POST", headers: { Accept: "application/json" }, body: new FormData(f) });
         const j = await r.json();
-        if (String(j.success) === "true") { f.style.display = "none"; f.nextElementSibling.classList.add("on"); try { window.umami && umami.track("formulier-verzonden", { pagina: location.pathname }); } catch (x) {} }
+        if (String(j.success) === "true") { f.style.display = "none"; f.nextElementSibling.classList.add("on"); ev("formulier-verzonden"); }
         else throw new Error(j.message || "fout");
-      } catch (err) { b.disabled = false; b.innerHTML = lbl; alert(f.dataset.err); }
+      } catch (err) { b.disabled = false; b.innerHTML = lbl; ev("formulier-fout", { fout: String(err && err.message || err).slice(0, 120) }); alert(f.dataset.err); }
     });
   });
 })();
